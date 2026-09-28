@@ -7,6 +7,21 @@
 
 **Scrymat turns your Magic: The Gathering decks into a shared virtual playmat — offline, at the table, or remotely with no account required.**
 
+## Project status
+
+Pre-release hobby project. Single-device play works today. Remote play is
+written but does not work on the live site yet. Last checked 2026-09-28.
+
+| Area | Status |
+| :--- | :----- |
+| Deck import/export (Scrymat, Moxfield, Archidekt, MTGO/Arena) and saved decks | Works |
+| Single-device play: shuffle, draw, mulligan, scry, tutor, fetch basic land, moving cards between zones | Works; covered by unit and Playwright tests in CI |
+| Scryfall card images with IndexedDB cache; offline use after first load | Works |
+| Live site ([`scryglass.cards`](https://scryglass.cards)) | Up, but it serves the 2026-08-03 build under the old "Scryglass" name. Deploys have failed since the repo rename. |
+| Remote play (WebRTC + signaling worker) | Partial. Client and worker code exist and are tested, but the worker has never been deployed. The live site has no `/api/room` backend, and `/match/:code` links return an error. |
+| Hidden-information protection (commit-reveal) and shared seeded shuffling | Partial. Implemented in `@scrymat/core` but not used by the app yet. Remote sync sends plain actions and full `GameState` snapshots. |
+| Local AI opponent over WebSocket | Partial. The app can connect to `ws://127.0.0.1:8765`; the repo ships only a prompt ([`agent/SKILL.md`](./agent/SKILL.md)), not an agent. |
+
 ---
 
 Scrymat is a **free, open-source Progressive Web App (PWA)** for MTG
@@ -30,6 +45,10 @@ use on a phone lying flat on a game store table.
 
 ### Remote Host / Join
 
+> [!WARNING]
+> Not working on the live site yet: the signaling worker is not deployed. See
+> [Project status](#project-status). The steps below describe the intended flow.
+
 1. One player clicks **Generate Room Code** to host a match.
 2. Share the room code or `/match/:roomCode` invite URL with the guest.
 3. The guest enters the code, Scrymat completes the WebRTC handshake, and both
@@ -47,13 +66,16 @@ use on a phone lying flat on a game store table.
   stay in control of takes-backs, shortcuts, and house rules.
 - **🤝 Peer-to-peer remote play** — WebRTC data channels plus stateless signaling
   synchronize matches without a central game server
-  ([ADR-014](./meta/adr/ADR-014-webrtc_data_channels_and_stateless_signaling.md))
+  ([ADR-014](./meta/adr/ADR-014-webrtc_data_channels_and_stateless_signaling.md)).
+  *Not yet deployed.*
 - **🔐 Hidden-information protection** — Commit-reveal hashing keeps opponents from
   trivially peeking at concealed cards during remote games. Hidden cards stay
-  committed until you intentionally reveal them.
+  committed until you intentionally reveal them. *Planned: implemented in core,
+  not yet used by the app.*
 - **🎲 Deterministic shared shuffling** — Seeded PRNG support lets every client
   derive the same deck order for a match
-  ([ADR-013](./meta/adr/ADR-013-deterministic_seeded_prng_for_shared_shuffling.md))
+  ([ADR-013](./meta/adr/ADR-013-deterministic_seeded_prng_for_shared_shuffling.md)).
+  *Planned: implemented in core, not yet used by the app.*
 - **📱 Offline-first local play** — Install to your home screen and keep using it
   for goldfishing or pass-and-play even without WiFi
 - **🖼️ Card images via Scryfall** — Background prefetch with IndexedDB caching and
