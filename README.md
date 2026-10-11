@@ -17,7 +17,7 @@ written but does not work on the live site yet. Last checked 2026-10-10.
 | Deck import/export (Scrymat, Moxfield, Archidekt, MTGO/Arena) and saved decks | Works |
 | Single-device play: shuffle, draw, mulligan, scry, tutor, fetch basic land, moving cards between zones | Works; covered by unit and Playwright tests in CI |
 | Scryfall card images with IndexedDB cache; offline use after first load | Works |
-| Live site ([`scryglass.cards`](https://scryglass.cards)) | Up, but it serves the 2026-08-03 build under the old "Scryglass" name. Deploys have failed since the repo rename because the AWS deploy role still trusts only the old repo name. Direct links to any path other than `/` return HTTP 403. |
+| Live site ([`scryglass.cards`](https://scryglass.cards)) | Up, but it serves the 2026-08-03 build under the old "Scryglass" name. Deploys have failed since the repo rename because the AWS deploy role's OIDC trust policy no longer matches this repo. Direct links to any path other than `/` return HTTP 403. |
 | `scrymat.cards` | Registered, but it has no DNS records yet and does not resolve. |
 | Remote play (WebRTC + signaling worker) | Partial. Client and worker code exist and are tested, but the worker has never been deployed (no Cloudflare credentials or KV namespace configured). The app calls a same-origin `/api/room`, which the live site does not serve, and `/match/:code` links return an error. |
 | Hidden-information protection (commit-reveal) and shared seeded shuffling | Partial. Implemented in `@scrymat/core` but not used by the app yet. Remote sync sends plain actions and full `GameState` snapshots. |
@@ -201,7 +201,8 @@ The workflow runs automatically on push to `main` and can be triggered manually 
 > [!IMPORTANT]
 > Final Scrymat cutover still requires **manual infrastructure follow-up**.
 > Deploys are currently blocked until the IAM deploy role's OIDC trust policy
-> allows `repo:efischer19/scrymat:*` (it still names the pre-rename repo).
+> is updated to match this repo's token subject. The repo uses GitHub's
+> immutable subject format: `repo:efischer19@7373924/scrymat@1200416986:*`.
 > After that: rename or redeploy the AWS bucket / CloudFront resources as desired, update
 > GitHub Actions variables if those names change, rotate any environment-specific
 > tokens tied to the legacy identifier, and repoint the public TLD when the new
