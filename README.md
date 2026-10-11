@@ -10,15 +10,16 @@
 ## Project status
 
 Pre-release hobby project. Single-device play works today. Remote play is
-written but does not work on the live site yet. Last checked 2026-09-28.
+written but does not work on the live site yet. Last checked 2026-10-10.
 
 | Area | Status |
 | :--- | :----- |
 | Deck import/export (Scrymat, Moxfield, Archidekt, MTGO/Arena) and saved decks | Works |
 | Single-device play: shuffle, draw, mulligan, scry, tutor, fetch basic land, moving cards between zones | Works; covered by unit and Playwright tests in CI |
 | Scryfall card images with IndexedDB cache; offline use after first load | Works |
-| Live site ([`scryglass.cards`](https://scryglass.cards)) | Up, but it serves the 2026-08-03 build under the old "Scryglass" name. Deploys have failed since the repo rename. |
-| Remote play (WebRTC + signaling worker) | Partial. Client and worker code exist and are tested, but the worker has never been deployed. The live site has no `/api/room` backend, and `/match/:code` links return an error. |
+| Live site ([`scryglass.cards`](https://scryglass.cards)) | Up, but it serves the 2026-08-03 build under the old "Scryglass" name. Deploys have failed since the repo rename because the AWS deploy role still trusts only the old repo name. Direct links to any path other than `/` return HTTP 403. |
+| `scrymat.cards` | Registered, but it has no DNS records yet and does not resolve. |
+| Remote play (WebRTC + signaling worker) | Partial. Client and worker code exist and are tested, but the worker has never been deployed (no Cloudflare credentials or KV namespace configured). The app calls a same-origin `/api/room`, which the live site does not serve, and `/match/:code` links return an error. |
 | Hidden-information protection (commit-reveal) and shared seeded shuffling | Partial. Implemented in `@scrymat/core` but not used by the app yet. Remote sync sends plain actions and full `GameState` snapshots. |
 | Local AI opponent over WebSocket | Partial. The app can connect to `ws://127.0.0.1:8765`; the repo ships only a prompt ([`agent/SKILL.md`](./agent/SKILL.md)), not an agent. |
 
@@ -30,8 +31,8 @@ entirely in your browser, works offline after first load, and is designed for
 use on a phone lying flat on a game store table.
 
 > [!NOTE]
-> The production TLD and some AWS infrastructure may still use the legacy
-> `scryglass` identifier until the final DNS and deploy cutover is complete.
+> The live site and AWS infrastructure still use the legacy `scryglass`
+> identifier. `scrymat.cards` is reserved for the new name but not live yet.
 
 ## 🚀 Quick Start (Play Tonight!)
 
@@ -108,8 +109,9 @@ enforcement:
 
 - **The table is dumb by design.** Scrymat tracks where cards are, not whether a
   play was legal.
-- **Private information uses commit-reveal.** Remote peers receive commitments
-  for hidden cards first, then the real card only when it becomes public.
+- **Private information uses commit-reveal** *(planned; not wired into the app
+  yet)*. Remote peers receive commitments for hidden cards first, then the real
+  card only when it becomes public.
 - **Reconnects prefer snapshots over logs.** When peers reconnect, the host can
   send the guest the current serialized `GameState` so both sides converge
   quickly.
@@ -197,8 +199,10 @@ The repository includes a GitHub Actions workflow (`.github/workflows/deploy-aws
 The workflow runs automatically on push to `main` and can be triggered manually via `workflow_dispatch`. See [docs-src/deployment.md](./docs-src/deployment.md) for the full step-by-step setup guide, including the IAM policy JSON and CloudFront configuration.
 
 > [!IMPORTANT]
-> Final Scrymat cutover still requires **manual infrastructure follow-up**:
-> rename or redeploy the AWS bucket / CloudFront resources as desired, update
+> Final Scrymat cutover still requires **manual infrastructure follow-up**.
+> Deploys are currently blocked until the IAM deploy role's OIDC trust policy
+> allows `repo:efischer19/scrymat:*` (it still names the pre-rename repo).
+> After that: rename or redeploy the AWS bucket / CloudFront resources as desired, update
 > GitHub Actions variables if those names change, rotate any environment-specific
 > tokens tied to the legacy identifier, and repoint the public TLD when the new
 > deployment is ready.
